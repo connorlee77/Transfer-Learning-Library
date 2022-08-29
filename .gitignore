@@ -1,3 +1,6 @@
+examples/domain_adaptation/image_classification/data/
+examples/domain_adaptation/image_classification/logs/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

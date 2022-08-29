@@ -1,0 +1,1 @@
+python cdan.py /home/carson/features --data=coco-m3fd --source=coco --target=m3fd --arch=resnet50 --batch-size=32 --epochs=30 --workers=8 --log=logs/cdan/coco-m3fd --weighted-sample --iters-per-epoch=2500

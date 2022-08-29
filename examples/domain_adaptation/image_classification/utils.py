@@ -6,12 +6,16 @@ import sys
 import os.path as osp
 import time
 from PIL import Image
+import os
 
 import timm
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torchvision.transforms as T
+import torchvision
+
+
 from timm.data.auto_augment import auto_augment_transform, rand_augment_transform
 
 sys.path.append('../../..')
@@ -22,6 +26,19 @@ from tllib.utils.metric import accuracy, ConfusionMatrix
 from tllib.utils.meter import AverageMeter, ProgressMeter
 from tllib.vision.datasets.imagelist import MultipleDomainsDataset
 
+
+def make_weight_for_balanced_classes(images, nclasses):
+    count = [0]*nclasses
+    for item in images:
+        count[item[1]] += 1
+    weight_per_class = [0.]*nclasses
+    N = float(sum(count))
+    for i in range(nclasses):
+        weight_per_class[i] = N/float(count[i])
+    weight = [0]*len(images)
+    for idx, val in enumerate(images):
+        weight[idx] = weight_per_class[val[1]]
+    return weight
 
 def get_model_names():
     return sorted(
@@ -51,7 +68,7 @@ def get_dataset_names():
     return sorted(
         name for name in datasets.__dict__
         if not name.startswith("__") and callable(datasets.__dict__[name])
-    ) + ['Digits']
+    ) + ['Digits'] + ['coco-m3fd']
 
 
 def get_dataset(dataset_name, root, source, target, train_source_transform, val_transform, train_target_transform=None):
@@ -66,6 +83,48 @@ def get_dataset(dataset_name, root, source, target, train_source_transform, val_
                                                                   download=True, transform=val_transform)
         class_names = datasets.MNIST.get_classes()
         num_classes = len(class_names)
+
+    elif dataset_name == 'coco-m3fd':
+        print('Ignoring supplied transformations...')
+        train_source_transform = T.Compose([
+            T.Resize((224, 224)), 
+            T.RandomHorizontalFlip(),
+            T.ToTensor(),
+            T.Normalize(mean=(0.4017, 0.3791, 0.3656), std=(0.2093, 0.2019, 0.1996))
+        ])
+
+        train_target_transform = T.Compose([
+            T.Resize((224, 224)), 
+            T.RandomHorizontalFlip(),
+            T.ToTensor(),
+            T.Normalize(mean=(0.4821, 0.4821, 0.4821), std=(0.2081, 0.2081, 0.2081))
+        ])
+
+        val_target_transform = T.Compose([
+            T.Resize((224, 224)), 
+            T.ToTensor(),
+            T.Normalize(mean=(0.4821, 0.4821, 0.4821), std=(0.2081, 0.2081, 0.2081))
+        ])
+
+        print('coco-m3fd default transformations...')
+        print("train_source_transform: ", train_source_transform)
+        print("train_target_transform: ", train_target_transform)
+        print("val_target_transform: ", val_target_transform)
+
+        
+        train_source_dataset = torchvision.datasets.ImageFolder(root=os.path.join(root, 'mscoco2', 'train'),
+                                             transform=train_source_transform)
+
+        train_target_dataset = torchvision.datasets.ImageFolder(root=os.path.join(root, 'm3fd', 'train'),
+                                             transform=train_target_transform)
+
+        val_dataset = torchvision.datasets.ImageFolder(root=os.path.join(root, 'm3fd', 'val'),
+                                             transform=val_target_transform)
+        test_dataset = torchvision.datasets.ImageFolder(root=os.path.join(root, 'm3fd', 'test'),
+                                             transform=val_target_transform)
+        class_names = train_source_dataset.classes
+        num_classes = len(class_names)
+
     elif dataset_name in datasets.__dict__:
         # load datasets from tllib.vision.datasets
         dataset = datasets.__dict__[dataset_name]

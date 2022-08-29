@@ -57,10 +57,27 @@ def main(args: argparse.Namespace):
 
     train_source_dataset, train_target_dataset, val_dataset, test_dataset, num_classes, args.class_names = \
         utils.get_dataset(args.data, args.root, args.source, args.target, train_transform, val_transform)
-    train_source_loader = DataLoader(train_source_dataset, batch_size=args.batch_size,
-                                     shuffle=True, num_workers=args.workers, drop_last=True)
-    train_target_loader = DataLoader(train_target_dataset, batch_size=args.batch_size,
-                                     shuffle=True, num_workers=args.workers, drop_last=True)
+
+    train_source_loader, train_target_loader = None, None
+    if args.weighted_sample:
+        source_weight = utils.make_weight_for_balanced_classes(train_source_dataset.imgs, len(train_source_dataset.classes))
+        source_weight = torch.DoubleTensor(source_weight)
+        source_sampler = torch.utils.data.sampler.WeightedRandomSampler(source_weight, len(source_weight))
+
+        target_weight = utils.make_weight_for_balanced_classes(train_target_dataset.imgs, len(train_target_dataset.classes))
+        target_weight = torch.DoubleTensor(target_weight)
+        target_sampler = torch.utils.data.sampler.WeightedRandomSampler(target_weight, len(target_weight))
+
+        train_source_loader = DataLoader(train_source_dataset, batch_size=args.batch_size,
+                                        shuffle=False, num_workers=args.workers, drop_last=True, sampler=source_sampler)
+        train_target_loader = DataLoader(train_target_dataset, batch_size=args.batch_size,
+                                        shuffle=False, num_workers=args.workers, drop_last=True, sampler=target_sampler)
+    else:
+        train_source_loader = DataLoader(train_source_dataset, batch_size=args.batch_size,
+                                        shuffle=True, num_workers=args.workers, drop_last=True)
+        train_target_loader = DataLoader(train_target_dataset, batch_size=args.batch_size,
+                                        shuffle=True, num_workers=args.workers, drop_last=True)
+
     val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False, num_workers=args.workers)
     test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False, num_workers=args.workers)
 
@@ -277,5 +294,6 @@ if __name__ == '__main__':
     parser.add_argument("--phase", type=str, default='train', choices=['train', 'test', 'analysis'],
                         help="When phase is 'test', only test the model."
                              "When phase is 'analysis', only analysis the model.")
+    parser.add_argument('--weighted-sample', action='store_true')
     args = parser.parse_args()
     main(args)
