@@ -1,0 +1,2 @@
+data_directory=${UDA_DATA_DIR:-/home/carson/features}
+python cdan.py $data_directory --data=coco-m3fd --source=coco --target=m3fd --arch=resnet50 --batch-size=32 --epochs=30 --workers=8 --log=logs/cdan_v2/coco-m3fd-test --weighted-sample --iters-per-epoch=2500 --seed=0 --phase=test --per-class-eval

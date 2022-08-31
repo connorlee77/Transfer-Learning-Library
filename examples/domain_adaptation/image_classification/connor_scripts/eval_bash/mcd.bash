@@ -1,0 +1,2 @@
+data_directory=${UDA_DATA_DIR:-/home/carson/features}
+python mcd.py $data_directory --data=coco-m3fd --source=coco --target=m3fd --arch=resnet50 --batch-size=32 --epochs=30 --workers=8 --log=logs/mcd/coco-m3fd --weighted-sample --iters-per-epoch=2500 --trade-off=0.3 --trade-off-entropy=0.01 --seed=0 --phase=test --per-class-eval

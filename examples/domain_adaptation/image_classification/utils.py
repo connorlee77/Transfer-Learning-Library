@@ -125,6 +125,36 @@ def get_dataset(dataset_name, root, source, target, train_source_transform, val_
         class_names = train_source_dataset.classes
         num_classes = len(class_names)
 
+    elif dataset_name == 'coco':
+        print('Ignoring supplied transformations...')
+        train_source_transform = T.Compose([
+            T.Resize((224, 224)), 
+            T.RandomHorizontalFlip(),
+            T.ToTensor(),
+            T.Normalize(mean=(0.4017, 0.3791, 0.3656), std=(0.2093, 0.2019, 0.1996))
+        ])
+
+        val_source_transform = T.Compose([
+            T.Resize((224, 224)), 
+            T.ToTensor(),
+            T.Normalize(mean=(0.4821, 0.4821, 0.4821), std=(0.2081, 0.2081, 0.2081))
+        ])
+
+        print('coco default transformations...')
+        print("train_source_transform: ", train_source_transform)
+        print("val_source_transform: ", val_source_transform)
+
+        
+        train_source_dataset = torchvision.datasets.ImageFolder(root=os.path.join(root, 'mscoco2', 'train'),
+                                             transform=train_source_transform)
+        train_target_dataset = None
+        test_dataset = None
+        val_dataset = torchvision.datasets.ImageFolder(root=os.path.join(root, 'mscoco2', 'val'),
+                                             transform=val_source_transform)
+        
+        class_names = train_source_dataset.classes
+        num_classes = len(class_names)
+
     elif dataset_name in datasets.__dict__:
         # load datasets from tllib.vision.datasets
         dataset = datasets.__dict__[dataset_name]
@@ -197,7 +227,7 @@ def validate(val_loader, model, args, device) -> float:
         if confmat:
             print(confmat.format(args.class_names))
 
-    return top1.avg
+    return losses.avg
 
 
 def get_train_transform(resizing='default', scale=(0.08, 1.0), ratio=(3. / 4., 4. / 3.), random_horizontal_flip=True,
