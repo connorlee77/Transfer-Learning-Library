@@ -1,0 +1,2 @@
+data_directory=${UDA_DATA_DIR:-/home/carson/features}
+python source_classifier.py $data_directory --data=coco --source=coco --target=m3fd --arch=resnet50 --batch-size=128 --pretrain-epochs=300 --workers=8 --log=logs/source_classifier/coco --weighted-sample --iters-per-epoch=2500 --seed 0 --workers=20
